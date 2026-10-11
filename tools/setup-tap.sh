@@ -16,3 +16,5 @@ mkdir -p "$tap_root/Formula"
 if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
 	cp Formula/mute-on-lock.rb "$tap_root/Formula/mute-on-lock.rb"
 fi
+# Non-official formulae require trust: https://docs.brew.sh/Homebrew-Security-and-Supply-Chain
+brew trust --formula shields/tap/mute-on-lock

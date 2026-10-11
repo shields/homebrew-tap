@@ -21,6 +21,6 @@ Use [right-answers](https://github.com/shields/right-answers), especially
 style.
 
 Use `make setup`, `make lint`, `make fmt`, and `make test`. Release automation
-opens formula PRs; required checks must pass before auto-merge. Only signed,
-notarized bottles that preserve the executable's bytes are accepted. Published
-artifacts are immutable, and formula versions must never decrease.
+opens formula PRs; required checks must pass before auto-merge. Bottles must
+match the published executable checksum and identify the tested source commit.
+Published artifacts are immutable, and formula versions must never decrease.

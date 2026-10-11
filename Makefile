@@ -45,6 +45,7 @@ fmt:
 
 test: setup-tap
 	./tools/test-version.sh
+	./tools/test-verification.sh
 	./tools/test-bottle.sh
 
 run: test

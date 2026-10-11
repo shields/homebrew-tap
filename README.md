@@ -20,7 +20,7 @@ Homebrew packages for macOS utilities. Formula updates arrive as pull requests
 from release automation in each source repository. Required checks verify the
 formula and bottle before GitHub merges the update.
 
-The first formula is added when its signed release is available.
+The first formula is added when its release is available.
 
 For development, install Bun and Homebrew, then run `make ci-setup` and
 `make lint test`. `make setup` and `make test` register the local repository as
@@ -34,7 +34,7 @@ brew services start shields/tap/mute-on-lock
 
 Run `brew update` and `brew upgrade shields/tap/mute-on-lock` to get a release,
 then `brew services restart shields/tap/mute-on-lock` to run it. The source
-project owns versioning, signing, notarization, and release assets.
+project owns versioning, bottle builds, and release assets.
 
 Copyright © 2026 Michael Shields. Licensed under Apache-2.0; see
 [LICENSE](LICENSE).
