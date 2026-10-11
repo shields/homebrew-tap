@@ -24,11 +24,11 @@ if [[ ! -f Formula/mute-on-lock.rb ]]; then
 	exit 0
 fi
 formula_name=shields/tap/mute-on-lock
-candidate_version=$(sed -n 's/^  version "\([^"]*\)".*/\1/p' Formula/mute-on-lock.rb)
+candidate_version=$(sed -n 's|^  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v\([^"]*\)\.tar\.gz"$|\1|p' Formula/mute-on-lock.rb)
 tools/check-version.sh "$candidate_version" "$candidate_version"
 if git rev-parse --verify --quiet refs/remotes/origin/main >/dev/null &&
 	git cat-file -e refs/remotes/origin/main:Formula/mute-on-lock.rb 2>/dev/null; then
-	current_version=$(git show refs/remotes/origin/main:Formula/mute-on-lock.rb | sed -n 's/^  version "\([^"]*\)".*/\1/p')
+	current_version=$(git show refs/remotes/origin/main:Formula/mute-on-lock.rb | sed -n 's|^  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v\([^"]*\)\.tar\.gz"$|\1|p')
 	tools/check-version.sh "$candidate_version" "$current_version"
 fi
 brew audit --strict --formula "$formula_name"

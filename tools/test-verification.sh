@@ -42,12 +42,12 @@ chmod +x "$test_directory/bin/mock-command"
 ln -s mock-command "$test_directory/bin/brew"
 ln -s mock-command "$test_directory/bin/curl"
 ln -s "$test_directory/bin/mock-command" "$test_directory/prefix/bin/mute-on-lock"
-printf '# Copyright © 2026 Michael Shields\n# SPDX-License-Identifier: Apache-2.0\n  version "0.20261010.1"\n' \
+printf '# Copyright © 2026 Michael Shields\n# SPDX-License-Identifier: Apache-2.0\n  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v0.20261010.1.tar.gz"\n' \
 	>"$test_directory/Formula/mute-on-lock.rb"
 export MOCK_LOG=$test_directory/calls MOCK_PREFIX=$test_directory/prefix MOCK_METADATA=$test_directory/release.json
 export PATH=$test_directory/bin:$PATH
 executable_hash=$(shasum -a 256 "$MOCK_PREFIX/bin/mute-on-lock" | awk '{print $1}')
-for scenario in valid wrong_hash invalid_hash wrong_version invalid_revision wrong_binary_version; do
+for scenario in valid upgrade current downgrade wrong_hash invalid_hash wrong_version invalid_revision wrong_binary_version; do
 	export MOCK_VERSION='0.20261010.1 (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)'
 	jq --null-input --arg hash "$executable_hash" \
 		'{copyright:"Copyright © 2026 Michael Shields", license:"Apache-2.0", version:"0.20261010.1", revision:("a" * 40), executableSHA256:$hash}' \
@@ -65,10 +65,24 @@ for scenario in valid wrong_hash invalid_hash wrong_version invalid_revision wro
 	esac
 	jq "$transformation" "$MOCK_METADATA" >"$test_directory/modified.json"
 	mv "$test_directory/modified.json" "$MOCK_METADATA"
+	git -C "$test_directory" update-ref -d refs/remotes/origin/main
+	case $scenario in
+	upgrade) base_version=0.20261009.1 ;;
+	current) base_version=0.20261010.1 ;;
+	downgrade) base_version=0.20261011.1 ;;
+	*) base_version= ;;
+	esac
+	if [[ -n $base_version ]]; then
+		base_blob=$(printf '  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v%s.tar.gz"\n' "$base_version" | git -C "$test_directory" hash-object -w --stdin)
+		formula_tree=$(printf '100644 blob %s\tmute-on-lock.rb\n' "$base_blob" | git -C "$test_directory" mktree)
+		base_tree=$(printf '040000 tree %s\tFormula\n' "$formula_tree" | git -C "$test_directory" mktree)
+		base_commit=$(printf 'Create tap test fixture\n' | git -C "$test_directory" -c user.name='Release tests' -c user.email='tests@example.invalid' commit-tree "$base_tree")
+		git -C "$test_directory" update-ref refs/remotes/origin/main "$base_commit"
+	fi
 	: >"$MOCK_LOG"
 	status=0
 	/bin/bash "$test_directory/tools/test-bottle.sh" >"$test_directory/output" 2>&1 || status=$?
-	if [[ $scenario == valid ]]; then
+	if [[ $scenario == valid || $scenario == upgrade || $scenario == current ]]; then
 		if [[ $status -ne 0 ]]; then
 			cat "$test_directory/output"
 			exit "$status"
@@ -82,6 +96,13 @@ for scenario in valid wrong_hash invalid_hash wrong_version invalid_revision wro
 			echo "Accepted invalid bottle: $scenario" >&2
 			exit 1
 		}
+		if [[ $scenario == downgrade ]]; then
+			rg --quiet '^Formula downgrade: 0.20261011.1 to 0.20261010.1$' "$test_directory/output"
+			if rg --quiet '^install ' "$MOCK_LOG"; then
+				echo 'Installed a formula downgrade' >&2
+				exit 1
+			fi
+		fi
 		if rg --quiet '^(test |services start )' "$MOCK_LOG"; then
 			echo "Executed an unverified bottle: $scenario" >&2
 			exit 1
