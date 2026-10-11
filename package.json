@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "type": "module",
+  "copyright": "Copyright © 2026 Michael Shields",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}
