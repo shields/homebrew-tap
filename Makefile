@@ -30,22 +30,40 @@ setup-tap:
 
 build: lint
 
-lint:
+lint: actions-lock-verify-local
 	./tools/check-notices.sh
 	bunx --no-install prettier --check .
 	shellcheck tools/*.sh
 	shfmt -d tools/*.sh
 	if [[ -f Formula/mute-on-lock.rb ]]; then brew style Formula/mute-on-lock.rb; fi
-	if [[ -d .github/workflows ]]; then zizmor --persona pedantic .github/workflows; fi
+	if [[ -d .github/workflows ]]; then zizmor --persona pedantic --strict-collection .; fi
 
 fmt:
 	bunx --no-install prettier --write .
 	shfmt -w tools/*.sh
 	if [[ -f Formula/mute-on-lock.rb ]]; then brew style --fix Formula/mute-on-lock.rb; fi
 
-test: setup-tap
+test:
 	./tools/test-version.sh
 	./tools/test-verification.sh
+
+.PHONY: test-bottle
+
+test-bottle: setup-tap
 	./tools/test-bottle.sh
 
 run: test
+
+.PHONY: actions-lock-install actions-lock actions-lock-verify-local actions-lock-verify
+
+actions-lock-install:
+	gh extension install github/gh-actions-lock --pin v0.4.1 --force
+
+actions-lock:
+	gh actions-lock --no-interactive
+
+actions-lock-verify-local:
+	gh actions-lock --verify-local
+
+actions-lock-verify:
+	gh actions-lock --verify

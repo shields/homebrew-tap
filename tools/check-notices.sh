@@ -6,6 +6,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 # Homebrew permits copyright and SPDX headers in formula files.
 while IFS= read -r -d '' notice_file; do
+	case $notice_file in
+	.github/workflows/actions.lock) continue ;;
+	esac
 	if [[ $notice_file != LICENSE ]] && ! rg -q 'Copyright © 2026 Michael Shields' "$notice_file"; then
 		echo "Missing copyright: $notice_file" >&2
 		exit 1

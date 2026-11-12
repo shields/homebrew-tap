@@ -24,6 +24,9 @@ if [[ ! -f Formula/mute-on-lock.rb ]]; then
 	exit 0
 fi
 formula_name=shields/tap/mute-on-lock
+if brew list --versions "$formula_name" >/dev/null 2>&1; then
+	die "Bottle qualification requires a clean installation of $formula_name"
+fi
 candidate_version=$(sed -n 's|^  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v\([^"]*\)\.tar\.gz"$|\1|p' Formula/mute-on-lock.rb)
 tools/check-version.sh "$candidate_version" "$candidate_version"
 if git rev-parse --verify --quiet refs/remotes/origin/main >/dev/null &&

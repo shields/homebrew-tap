@@ -7,6 +7,10 @@ case ${0##*/} in
 brew)
 	printf '%s\n' "$*" >>"$MOCK_LOG"
 	case $1 in
+	list)
+		[[ ${MOCK_ALREADY_INSTALLED:-0} == 1 ]] || exit 1
+		printf '0.20261010.1\n'
+		;;
 	audit | install | test | uninstall) ;;
 	--prefix) printf '%s\n' "$MOCK_PREFIX" ;;
 	services)
@@ -47,7 +51,9 @@ printf '# Copyright © 2026 Michael Shields\n# SPDX-License-Identifier: Apache-2
 export MOCK_LOG=$test_directory/calls MOCK_PREFIX=$test_directory/prefix MOCK_METADATA=$test_directory/release.json
 export PATH=$test_directory/bin:$PATH
 executable_hash=$(shasum -a 256 "$MOCK_PREFIX/bin/mute-on-lock" | awk '{print $1}')
-for scenario in valid upgrade current downgrade wrong_hash invalid_hash wrong_version invalid_revision wrong_binary_version; do
+for scenario in valid upgrade current already_installed downgrade wrong_hash invalid_hash wrong_version invalid_revision wrong_binary_version; do
+	export MOCK_ALREADY_INSTALLED=0
+	if [[ $scenario == already_installed ]]; then export MOCK_ALREADY_INSTALLED=1; fi
 	export MOCK_VERSION='0.20261010.1 (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)'
 	jq --null-input --arg hash "$executable_hash" \
 		'{copyright:"Copyright © 2026 Michael Shields", license:"Apache-2.0", version:"0.20261010.1", revision:("a" * 40), executableSHA256:$hash}' \
@@ -96,6 +102,13 @@ for scenario in valid upgrade current downgrade wrong_hash invalid_hash wrong_ve
 			echo "Accepted invalid bottle: $scenario" >&2
 			exit 1
 		}
+		if [[ $scenario == already_installed ]]; then
+			rg --quiet 'Bottle qualification requires a clean installation' "$test_directory/output"
+			if rg --quiet '^(audit |install |uninstall |services )' "$MOCK_LOG"; then
+				echo 'Modified an existing installation' >&2
+				exit 1
+			fi
+		fi
 		if [[ $scenario == downgrade ]]; then
 			rg --quiet '^Formula downgrade: 0.20261011.1 to 0.20261010.1$' "$test_directory/output"
 			if rg --quiet '^install ' "$MOCK_LOG"; then

@@ -24,3 +24,8 @@ Use `make setup`, `make lint`, `make fmt`, and `make test`. Release automation
 opens formula PRs; required checks must pass before auto-merge. Bottles must
 match the published executable checksum and identify the tested source commit.
 Published artifacts are immutable, and formula versions must never decrease.
+
+`make test-bottle` qualifies the published bottle on a clean Homebrew
+installation. It installs, starts, stops, and removes the formula, and refuses
+an existing installation. CI runs it after the local metadata and verification
+tests.
