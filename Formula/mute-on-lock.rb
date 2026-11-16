@@ -4,13 +4,13 @@
 class MuteOnLock < Formula
   desc "Mute speakers when macOS locks while leaving headphones playing"
   homepage "https://github.com/shields/mute-on-lock"
-  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v0.20261115.1.tar.gz"
-  sha256 "e5c0aa307693219c6100f9faa29a307adb4d6ebee65e82daefe1f23783c5bbdf"
+  url "https://github.com/shields/mute-on-lock/archive/refs/tags/v0.20261116.1.tar.gz"
+  sha256 "aba894b9f06dc941dd46595fa11fce9e61b9750a65edf5b3abef9aa51820d029"
   license "Apache-2.0"
 
   bottle do
-    root_url "https://github.com/shields/mute-on-lock/releases/download/v0.20261115.1"
-    sha256 cellar: :any_skip_relocation, arm64_golden_gate: "a7b1e5798496b614e5647f6eff5dec0ce5e86a283fd69f28d8a4ec8cd5c789d4"
+    root_url "https://github.com/shields/mute-on-lock/releases/download/v0.20261116.1"
+    sha256 cellar: :any_skip_relocation, arm64_golden_gate: "76f4814a153f4ade25fa025ffa1578734876fa4faaf3553b82a682bf5b54ef50"
   end
 
   depends_on xcode: ["27.0", :build]
@@ -29,7 +29,7 @@ class MuteOnLock < Formula
     ENV["SWIFT_BUILD_FLAGS"] = "--disable-sandbox"
     ENV["SWIFT_ARGUMENT_PARSER_PATH"] = (buildpath/"swift-argument-parser").to_s
     ENV["VERSION"] = version.to_s
-    ENV["REVISION"] = "d1f2c4db117775ca87754f10b40084efaa537acd"
+    ENV["REVISION"] = "54df10af8ac58359de4572227e41613b0733838a"
     # A local dependency graph avoids fetching stale remote pins.
     rm "Package.resolved"
     system "make", "build"
@@ -47,7 +47,7 @@ class MuteOnLock < Formula
   end
 
   test do
-    assert_equal "#{version} (d1f2c4db117775ca87754f10b40084efaa537acd)", shell_output("#{bin}/mute-on-lock --version").strip
+    assert_equal "#{version} (54df10af8ac58359de4572227e41613b0733838a)", shell_output("#{bin}/mute-on-lock --version").strip
     assert_match "Mute speaker and unidentified outputs", shell_output("#{bin}/mute-on-lock --help")
   end
 end
