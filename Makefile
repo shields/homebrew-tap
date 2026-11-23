@@ -46,6 +46,7 @@ fmt:
 test:
 	./tools/test-version.sh
 	./tools/test-verification.sh
+	bash tools/test-cask-fixture.sh
 
 .PHONY: test-bottle test-cask
 test-cask: setup-tap
