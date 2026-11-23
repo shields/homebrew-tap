@@ -18,3 +18,11 @@ if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
 fi
 # Non-official formulae require trust: https://docs.brew.sh/Homebrew-Security-and-Supply-Chain
 brew trust --formula shields/tap/mute-on-lock
+
+if [[ -f Casks/typefaceoff.rb ]]; then
+	if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
+		mkdir -p "$tap_root/Casks"
+		cp Casks/typefaceoff.rb "$tap_root/Casks/typefaceoff.rb"
+	fi
+	brew trust --cask shields/tap/typefaceoff
+fi

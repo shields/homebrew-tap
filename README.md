@@ -20,7 +20,11 @@ Homebrew packages for macOS utilities. Formula updates arrive as pull requests
 from release automation in each source repository. Required checks verify the
 formula and bottle before GitHub merges the update.
 
-The first formula is added when its release is available.
+Typeface/Off releases add `Casks/typefaceoff.rb` with the SHA-256 of the
+notarized disk image. Once the first cask update merges, install it with
+`brew install --cask shields/tap/typefaceoff` and update it with
+`brew upgrade --cask shields/tap/typefaceoff`. `make test-cask` qualifies the
+cask in a clean Homebrew installation.
 
 For development, install Bun and Homebrew, then run `make ci-setup` and
 `make lint test`. `make setup` and `make test` register the local repository as

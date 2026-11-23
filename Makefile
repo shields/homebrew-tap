@@ -35,19 +35,22 @@ lint: actions-lock-verify-local
 	bunx --no-install prettier --check .
 	shellcheck tools/*.sh
 	shfmt -d tools/*.sh
-	if [[ -f Formula/mute-on-lock.rb ]]; then brew style Formula/mute-on-lock.rb; fi
+	bash tools/style.sh
 	if [[ -d .github/workflows ]]; then zizmor --persona pedantic --strict-collection .; fi
 
 fmt:
 	bunx --no-install prettier --write .
 	shfmt -w tools/*.sh
-	if [[ -f Formula/mute-on-lock.rb ]]; then brew style --fix Formula/mute-on-lock.rb; fi
+	bash tools/style.sh --fix
 
 test:
 	./tools/test-version.sh
 	./tools/test-verification.sh
 
-.PHONY: test-bottle
+.PHONY: test-bottle test-cask
+test-cask: setup-tap
+	bash tools/test-cask.sh
+
 
 test-bottle: setup-tap
 	./tools/test-bottle.sh
