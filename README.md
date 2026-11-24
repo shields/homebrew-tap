@@ -27,9 +27,10 @@ notarized disk image. Once the first cask update merges, install it with
 cask in a clean Homebrew installation.
 
 For development, install Bun and Homebrew, then run `make ci-setup` and
-`make lint test`. `make setup` and `make test` register the local repository as
-`shields/tap` when it is untapped and copy the checked-out formula into the tap
-used by Homebrew. This ensures that local tests and CI test the working tree.
+`make lint test`. `make setup`, `make test-bottle`, and `make test-cask`
+register the local repository as `shields/tap` when it is untapped and copy the
+checked-out formula and cask into the tap used by Homebrew. This ensures that
+local tests and CI test the working tree.
 
 ```sh
 brew install shields/tap/mute-on-lock

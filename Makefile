@@ -35,26 +35,26 @@ lint: actions-lock-verify-local
 	bunx --no-install prettier --check .
 	shellcheck tools/*.sh
 	shfmt -d tools/*.sh
-	bash tools/style.sh
+	./tools/style.sh
 	if [[ -d .github/workflows ]]; then zizmor --persona pedantic --strict-collection .; fi
 
 fmt:
 	bunx --no-install prettier --write .
 	shfmt -w tools/*.sh
-	bash tools/style.sh --fix
+	./tools/style.sh --fix
 
 test:
 	./tools/test-version.sh
 	./tools/test-verification.sh
-	bash tools/test-cask-fixture.sh
+	./tools/test-cask-fixture.sh
 
 .PHONY: test-bottle test-cask
-test-cask: setup-tap
-	bash tools/test-cask.sh
-
 
 test-bottle: setup-tap
 	./tools/test-bottle.sh
+
+test-cask: setup-tap
+	./tools/test-cask.sh
 
 run: test
 

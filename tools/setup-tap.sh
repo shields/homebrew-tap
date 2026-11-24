@@ -5,20 +5,21 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 repository_root="$(pwd -P)"
-if [[ ! -f Formula/mute-on-lock.rb ]]; then
+if [[ ! -f Formula/mute-on-lock.rb && ! -f Casks/typefaceoff.rb ]]; then
 	exit 0
 fi
 if ! brew tap | rg --quiet --line-regexp 'shields/tap'; then
 	brew tap shields/tap "$repository_root"
 fi
 tap_root="$(brew --repository shields/tap)"
-mkdir -p "$tap_root/Formula"
-if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
-	cp Formula/mute-on-lock.rb "$tap_root/Formula/mute-on-lock.rb"
+if [[ -f Formula/mute-on-lock.rb ]]; then
+	mkdir -p "$tap_root/Formula"
+	if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
+		cp Formula/mute-on-lock.rb "$tap_root/Formula/mute-on-lock.rb"
+	fi
+	# Non-official formulae require trust: https://docs.brew.sh/Homebrew-Security-and-Supply-Chain
+	brew trust --formula shields/tap/mute-on-lock
 fi
-# Non-official formulae require trust: https://docs.brew.sh/Homebrew-Security-and-Supply-Chain
-brew trust --formula shields/tap/mute-on-lock
-
 if [[ -f Casks/typefaceoff.rb ]]; then
 	if [[ "$(cd "$tap_root" && pwd -P)" != "$repository_root" ]]; then
 		mkdir -p "$tap_root/Casks"
