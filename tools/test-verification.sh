@@ -110,7 +110,7 @@ for scenario in valid upgrade current already_installed downgrade wrong_hash inv
 			fi
 		fi
 		if [[ $scenario == downgrade ]]; then
-			rg --quiet '^Formula downgrade: 0.20261011.1 to 0.20261010.1$' "$test_directory/output"
+			rg --quiet '^Version downgrade: 0.20261011.1 to 0.20261010.1$' "$test_directory/output"
 			if rg --quiet '^install ' "$MOCK_LOG"; then
 				echo 'Installed a formula downgrade' >&2
 				exit 1

@@ -21,11 +21,22 @@ Use [right-answers](https://github.com/shields/right-answers), especially
 style.
 
 Use `make setup`, `make lint`, `make fmt`, and `make test`. Release automation
-opens formula PRs; required checks must pass before auto-merge. Bottles must
-match the published executable checksum and identify the tested source commit.
-Published artifacts are immutable, and formula versions must never decrease.
+opens formula and cask PRs; required checks must pass before auto-merge. Bottles
+must match the published executable checksum and identify the tested source
+commit. Published artifacts are immutable, and formula and cask versions must
+never decrease.
 
 `make test-bottle` qualifies the published bottle on a clean Homebrew
 installation. It installs, starts, stops, and removes the formula, and refuses
 an existing installation. CI runs it after the local metadata and verification
 tests.
+
+`make test-cask` qualifies the cask at the tip of `origin/main`, a cask that
+differs from its merge base with `origin/main`, and any cask when `origin/main`
+is absent. The URL must name the Typeface/Off release's disk image, the release
+must be immutable, its asset digest must equal the cask's checksum, and
+`brew audit --strict` must pass. It reads the release through `gh`, so it needs
+`GH_TOKEN` or a logged-in `gh`. The cask is not installed: the Typeface/Off
+release checks the image's signature, notarization, and contents before
+publishing it, and Homebrew enforces the checksum on download. CI runs it after
+`make test-bottle`.
