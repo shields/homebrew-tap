@@ -4,63 +4,27 @@
 
 set -euo pipefail
 case ${0##*/} in
-brew | gh | codesign | spctl | lipo) printf '%s\n' "${0##*/} $*" >>"$FIXTURE_ROOT/calls" ;;
-esac
-case ${0##*/} in
 brew)
+	printf '%s\n' "brew $*" >>"$FIXTURE_ROOT/calls"
 	case $1 in
 	info) jq -n --arg url "$cask_url" --arg hash "$cask_hash" --argjson count "${FIXTURE_CASKS:-1}" '[range($count) | {url:$url,sha256:$hash}] | {casks:.}' ;;
-	audit) ;;
-	list)
-		[[ ${FIXTURE_INSTALLED:-} == 1 && $4 == typefaceoff ]] || exit 1
-		echo typefaceoff 0.20261123.1
-		;;
-	install)
-		[[ $HOMEBREW_NO_AUTOREMOVE == 1 && $HOMEBREW_NO_INSTALL_CLEANUP == 1 ]] || exit 1
-		dir=${3#--appdir=}
-		printf '%s\n' "$dir" >"$FIXTURE_ROOT/installed"
-		mkdir -p "$dir/TypefaceOff.app/Contents"
-		plutil -create xml1 "$dir/TypefaceOff.app/Contents/Info.plist"
-		for pair in "CFBundleIdentifier=${FIXTURE_BUNDLE_ID:-com.typefaceoff}" "CFBundleVersion=${FIXTURE_BUILD:-20261123.1}" "CFBundleShortVersionString=${FIXTURE_VERSION:-0.20261123.1}"; do
-			plutil -insert "${pair%%=*}" -string "${pair#*=}" "$dir/TypefaceOff.app/Contents/Info.plist"
-		done
-		;;
-	uninstall)
-		[[ $HOMEBREW_NO_AUTOREMOVE == 1 && $HOMEBREW_NO_INSTALL_CLEANUP == 1 && -e $FIXTURE_ROOT/installed ]] || exit 1
-		[[ ${FIXTURE_KEEP:-} == 1 ]] || rm -rf "$(cat "$FIXTURE_ROOT/installed")/TypefaceOff.app"
-		rm "$FIXTURE_ROOT/installed"
-		;;
+	audit) [[ ${FIXTURE_FAIL:-} != audit ]] || {
+		echo 'brew audit: offense' >&2
+		exit 1
+	} ;;
 	*) exit 2 ;;
 	esac
 	exit 0
 	;;
 gh)
-	[[ $1 == api && $2 == repos/shields/typefaceoff/releases/tags/v0.20261123.1 ]] || exit 1
+	printf '%s\n' "gh $*" >>"$FIXTURE_ROOT/calls"
+	[[ $1 == api && $2 == "repos/shields/typefaceoff/releases/tags/v$release_version" ]] || {
+		echo 'gh: Not Found (HTTP 404)' >&2
+		exit 1
+	}
 	jq -n --argjson immutable "$release_immutable" --arg url "$asset_url" --arg hash "$asset_hash" '{immutable:$immutable,assets:[{browser_download_url:$url,digest:("sha256:"+$hash)}]}'
 	exit 0
 	;;
-codesign)
-	[[ ${FIXTURE_FAIL:-} != codesign ]] || {
-		echo 'codesign: signature rejected' >&2
-		exit 1
-	}
-	for argument in "$@"; do
-		case $argument in
-		-R=*)
-			# The real codesign rejects a malformed requirement before it examines any code.
-			output=$(/usr/bin/codesign --verify "$argument" /bin/ls 2>&1 || true)
-			case $output in
-			*'invalid or corrupted code requirement'*)
-				echo "$output" >&2
-				exit 1
-				;;
-			esac
-			;;
-		esac
-	done
-	exit 0
-	;;
-spctl | lipo) exit 0 ;;
 esac
 
 cd "$(dirname "$0")/.."
@@ -71,15 +35,15 @@ tap=$work/tap
 mkdir -p "$tap/tools" "$tap/Casks" "$work/bin"
 cp tools/test-cask.sh tools/check-version.sh "$tap/tools/"
 git init -q "$tap"
-echo '  version "0.20261123.1"' >"$tap/Casks/typefaceoff.rb"
-for command in brew gh codesign spctl lipo; do
+for command in brew gh; do
 	cp tools/test-cask-fixture.sh "$work/bin/$command"
 	chmod +x "$work/bin/$command"
 done
 export PATH="$work/bin:$PATH"
 asset=https://github.com/shields/typefaceoff/releases/download/v0.20261123.1/TypefaceOff-0.20261123.1.dmg
 digest=$(printf '%064d' 1)
-export cask_url=$asset cask_hash=$digest asset_url=$asset asset_hash=$digest release_immutable=true
+export cask_url=$asset cask_hash=$digest asset_url=$asset asset_hash=$digest release_immutable=true release_version=0.20261123.1
+write_cask() { echo "  version \"$1\"" >"$tap/Casks/typefaceoff.rb"; }
 
 fail() {
 	echo "$*" >&2
@@ -88,11 +52,10 @@ fail() {
 called() { grep -Eq "$1" "$work/calls"; }
 run() {
 	: >"$work/calls"
-	rm -f "$work/installed"
 	env "$@" "$tap/tools/test-cask.sh" >"$work/output" 2>&1
 }
 accept() {
-	if ! run; then
+	if ! run "$@"; then
 		cat "$work/output" >&2
 		fail "Rejected valid cask"
 	fi
@@ -105,67 +68,86 @@ reject() {
 		cat "$work/output" >&2
 		fail "Wrong failure for: $message"
 	fi
-	if [[ -e $work/installed ]]; then fail "Left the cask installed: $message"; fi
-	if called '^brew install ' && ! called '^brew uninstall '; then fail "Left the cask installed: $message"; fi
 }
-untouched() {
-	if called '^brew (install|uninstall) '; then fail "Modified an installation: $1"; fi
+qualified() {
+	called '^brew info --json=v2 --cask shields/tap/typefaceoff$' || fail "Did not read the cask: $1"
+	called '^gh api repos/shields/typefaceoff/releases/tags/v' || fail "Did not read the release: $1"
+	called '^brew audit --strict --cask shields/tap/typefaceoff$' || fail "Did not audit the cask: $1"
+}
+skipped() {
+	if [[ -s $work/calls ]]; then fail "Qualified an unchanged cask: $1"; fi
 }
 
+write_cask 0.20261123.1
 accept
-called '^brew info --json=v2 --cask shields/tap/typefaceoff$' || fail "Did not read the cask"
-called '^brew audit --strict --cask shields/tap/typefaceoff$' || fail "Did not audit the cask"
-called '^brew install --cask --appdir=/.* shields/tap/typefaceoff$' || fail "Did not install the cask"
-called '^brew uninstall --cask shields/tap/typefaceoff$' || fail "Did not uninstall the cask"
-called '^codesign --verify --deep --strict -R=identifier "com.typefaceoff" and anchor apple generic and certificate leaf\[subject.OU\] = "229AJ92JUV" and ' || fail "Did not check the signature"
-called '^spctl --assess --type execute /.*/TypefaceOff.app$' || fail "Did not assess Gatekeeper"
-for arch in arm64 x86_64; do
-	called "^lipo /.*/TypefaceOff.app/Contents/MacOS/TypefaceOff -verify_arch $arch\$" || fail "Did not check $arch"
-done
+qualified 'new cask'
 
 reject 'does not publish' asset_hash="$(printf '%064d' 2)"
-untouched checksum
 reject 'does not publish' release_immutable=false
-untouched mutable
 reject 'does not publish' asset_url=https://example.invalid/TypefaceOff.dmg
-untouched asset
 reject 'Cask URL is not' cask_url=https://example.invalid/TypefaceOff.dmg
-untouched cask
 reject 'Invalid cask checksum' cask_hash=no_check
-untouched unchecked
 reject 'Invalid cask checksum' FIXTURE_CASKS=2
-untouched ambiguous
-reject 'requires a clean installation' FIXTURE_INSTALLED=1
-untouched installed
-reject 'Installed app is not com.typefaceoff' FIXTURE_BUNDLE_ID=com.example.other
-called '^brew uninstall ' || fail "Kept a mismatched bundle"
-reject 'Installed app is not version' FIXTURE_VERSION=0.20261122.1
-reject 'Installed app is not build' FIXTURE_BUILD=20261122.1
-reject 'left' FIXTURE_KEEP=1
-reject 'codesign' FIXTURE_FAIL=codesign
-called '^brew uninstall ' || fail "Kept an unsigned bundle"
+reject 'brew audit' FIXTURE_FAIL=audit
+reject 'HTTP 404' release_version=0.20261122.1
 
-echo '  version "development"' >"$tap/Casks/typefaceoff.rb"
+write_cask development
 reject 'Invalid version'
-untouched version
-echo '  version "0.20261123.1"' >"$tap/Casks/typefaceoff.rb"
+if called '^(brew|gh) '; then fail "Read metadata for an invalid version"; fi
 
 git_tap() { git -C "$tap" -c user.name='Cask tests' -c user.email='tests@example.invalid' "$@"; }
-base=$(git_tap commit-tree "$(git_tap mktree </dev/null)" -m 'Create tap test fixture')
-casks=$(printf '100644 blob %s\ttypefaceoff.rb\n' "$(git_tap hash-object -w Casks/typefaceoff.rb)" | git_tap mktree)
-root=$(printf '040000 tree %s\tCasks\n' "$casks" | git_tap mktree)
-published=$(git_tap commit-tree "$root" -p "$base" -m 'Publish cask')
+commit_cask() {
+	local blob casks root
+	blob=$(printf '  version "%s"\n' "$1" | git_tap hash-object -w --stdin)
+	casks=$(printf '100644 blob %s\ttypefaceoff.rb\n' "$blob" | git_tap mktree)
+	root=$(printf '040000 tree %s\tCasks\n' "$casks" | git_tap mktree)
+	git_tap commit-tree "$root" -p "$2" -m "Publish cask $1"
+}
+empty=$(git_tap commit-tree "$(git_tap mktree </dev/null)" -m 'Create tap test fixture')
+published=$(commit_cask 0.20261123.1 "$empty")
 git_tap update-ref refs/remotes/origin/main "$published"
 git_tap update-ref --no-deref HEAD "$published"
 
+write_cask 0.20261123.1
 accept
-echo '  version "0.20261122.1"' >"$tap/Casks/typefaceoff.rb"
+qualified 'default branch'
+reject 'does not publish' asset_hash="$(printf '%064d' 2)"
+
+git_tap update-ref --no-deref HEAD "$(commit_cask 0.20261123.1 "$published")"
+accept
+skipped 'branch with the published cask'
+accept asset_hash="$(printf '%064d' 2)"
+skipped 'branch with the published cask and a changed release'
+git_tap update-ref --no-deref HEAD "$published"
+
+write_cask 0.20261123.2
+export cask_url=${asset//0.20261123.1/0.20261123.2} asset_url=${asset//0.20261123.1/0.20261123.2} release_version=0.20261123.2
+accept
+qualified 'updated cask'
+export cask_url=$asset asset_url=$asset release_version=0.20261123.1
+
+write_cask 0.20261122.1
 reject 'downgrade'
-untouched downgrade
 rm "$tap/Casks/typefaceoff.rb"
 reject 'Missing published cask'
-untouched deletion
+skipped 'deleted cask'
 
-git_tap update-ref --no-deref HEAD "$base"
+git_tap update-ref --no-deref HEAD "$empty"
 accept
-untouched 'branch from before the cask'
+skipped 'branch from before the cask'
+
+git_tap update-ref refs/remotes/origin/main "$empty"
+git_tap update-ref --no-deref HEAD "$(git_tap commit-tree "$(git_tap mktree </dev/null)" -p "$empty" -m 'Add cask')"
+write_cask 0.20261123.1
+accept
+qualified 'cask added to a default branch without one'
+
+git_tap update-ref --no-deref HEAD "$(git_tap commit-tree "$(git_tap mktree </dev/null)" -m 'Unrelated history')"
+reject 'No merge base'
+
+newer=$(commit_cask 0.20261124.1 "$published")
+git_tap update-ref refs/remotes/origin/main "$newer"
+git_tap update-ref --no-deref HEAD "$published"
+write_cask 0.20261123.1
+accept
+skipped 'branch from before a cask update'

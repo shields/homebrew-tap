@@ -31,9 +31,12 @@ installation. It installs, starts, stops, and removes the formula, and refuses
 an existing installation. CI runs it after the local metadata and verification
 tests.
 
-`make test-cask` qualifies the published disk image the same way. It checks the
-immutable release's digest through `gh`, so it needs `GH_TOKEN` or a logged-in
-`gh`. It installs the cask into a temporary application directory, verifies the
-bundle identity, Developer ID signature, Gatekeeper assessment, and
-architectures, and removes the cask. It refuses an existing installation. CI
-runs it after `make test-bottle`.
+`make test-cask` qualifies the cask at the tip of `origin/main`, a cask that
+differs from its merge base with `origin/main`, and any cask when `origin/main`
+is absent. The URL must name the Typeface/Off release's disk image, the release
+must be immutable, its asset digest must equal the cask's checksum, and
+`brew audit --strict` must pass. It reads the release through `gh`, so it needs
+`GH_TOKEN` or a logged-in `gh`. The cask is not installed: the Typeface/Off
+release checks the image's signature, notarization, and contents before
+publishing it, and Homebrew enforces the checksum on download. CI runs it after
+`make test-bottle`.

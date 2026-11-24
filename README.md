@@ -23,8 +23,8 @@ formula and bottle before GitHub merges the update.
 Typeface/Off releases add `Casks/typefaceoff.rb` with the SHA-256 of the
 notarized disk image. Once the first cask update merges, install it with
 `brew install --cask shields/tap/typefaceoff` and update it with
-`brew upgrade --cask shields/tap/typefaceoff`. `make test-cask` qualifies the
-cask in a clean Homebrew installation.
+`brew upgrade --cask shields/tap/typefaceoff`. `make test-cask` audits a changed
+cask and checks that it pins the immutable release's disk image.
 
 For development, install Bun and Homebrew, then run `make ci-setup` and
 `make lint test`. `make setup`, `make test-bottle`, and `make test-cask`
