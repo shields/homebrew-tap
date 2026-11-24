@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cask "typefaceoff" do
-  version "0.20261124.13"
-  sha256 "f71ccfe103436eba01fb93921edea7f01004970ccc8e01718f4d4d36da195e2d"
+  version "0.20261124.15"
+  sha256 "e363b91d6a038bc1404ea1c9d04c1409dab7cf216c8e45fe63083b66e6cda541"
 
   url "https://github.com/shields/typefaceoff/releases/download/v#{version}/TypefaceOff-#{version}.dmg"
   name "Typeface/Off"
